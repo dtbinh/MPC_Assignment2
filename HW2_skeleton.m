@@ -23,14 +23,14 @@ A = [ 0.2681   -0.00338   -0.00728;
       9.7032    0.3279   -25.44;
          0         0       1   ];
 B = [ -0.00537  0.1655;
-       1.297   97.91 ;
+       1.297   97.91;
        0       -6.637];
 C = [ 1 0 0;
       0 1 0;
       0 0 1];
 Bp = [-0.1175;
       69.74;
-       6.637 ];
+       6.637];
    
 n = size(A,1); % n is the dimension of the state
 m = size(B,2); % m is the dimension of the control signal
@@ -65,11 +65,12 @@ end
 % Augment the model with constant disturbances
 
 Ae = [A Bd;zeros(nd,n) eye(nd)];
-Be = [B;zeros(nd + n - m, m)];
+Be = [B;zeros(nd + n - size(B, 1), m)];
 Ce = [C Cd];
 
 % Calculate observer gain 
-
+SYS = ss(Ae, Be, Ce, zeros(size(Ce, 1), size(Be, 2)), 60)
+[KEST, L, P, M, Z] = kalman(SYS, eye(2), eye(3));
 Le = 3;
 
 %%
