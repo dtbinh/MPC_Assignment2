@@ -64,13 +64,13 @@ end
 
 % Augment the model with constant disturbances
 
-Ae = ...
-Be = ...  YOUR CODE GOES HERE
-Ce = ...
+Ae = [A Bd;zeros(nd,n) eye(nd)];
+Be = [B;zeros(nd + n - m, m)];
+Ce = [C Cd];
 
 % Calculate observer gain 
 
-Le = ...  YOUR CODE GOES HERE
+Le = 3;
 
 %%
 %==========================================================================
