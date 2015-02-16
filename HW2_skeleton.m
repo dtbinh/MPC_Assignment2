@@ -10,6 +10,7 @@
 
 clear;
 close all
+clc
 tf=50;                  % number of simulation steps
 
 %==========================================================================
@@ -35,7 +36,7 @@ n = size(A,1); % n is the dimension of the state
 m = size(B,2); % m is the dimension of the control signal
 p = size(C,1); % p is the dimension of the measured output
 
-d=0.01*[zeros(1*tf/5,1);ones(4*tf/5,1)]; %unmeasured disturbance trajectory
+d = 0.01*[zeros(1*tf/5,1); ones(4*tf/5,1)]; %unmeasured disturbance trajectory
 
 x0 = [0.01;1;0.1]; % initial condition of system's state
 
@@ -52,11 +53,11 @@ switch example
         Bd = zeros(n,nd);
         Cd = [1 0;0 0; 0 1]; 
     case 'b'
-        nd=3;
+        nd = 3;
         Bd = zeros(n,nd); 
         Cd = [1 0 0;0 0 1;0 1 0];
     case 'c'
-        nd=3; 
+        nd = 3; 
         Bd = [zeros(3,2) Bp];
         Cd = [1 0 0;0 0 0;0 1 0];
 end
@@ -76,7 +77,7 @@ Le = ...  YOUR CODE GOES HERE
 %==========================================================================
 
 % Select 1st and 3rd outputs as controlled outputs   
-H = [1 0 0;0 0 1]; 
+H = [1, 0, 0; 0, 0, 1]; 
 
 % Matrices for steady state target calculation to be used later
 
@@ -86,8 +87,8 @@ YOUR CODE GOES HERE
 % Set up MPC controller
 %==========================================================================
 
-N=10;                   % prediction horizon
-M=3;                    % control horizon
+N = 10;                   % prediction horizon
+M = 3;                    % control horizon
 
 Q = diag([1 0.001 1]);  % state penalty
 Pf = Q;                 % terminal state penalty
