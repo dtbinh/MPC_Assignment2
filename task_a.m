@@ -19,12 +19,18 @@ Cz = H*C;
 
 zsp = [1, -1]';
 
-Aeq = [I-A, -B; H*C, zeros(2,2)];
-% Aeq*[x;u]
-% Cz*x
-beq = [zeros(4,1); zsp]
 
-s = Aeq\beq
+Ass = diag([0.5, 0.6, 0.5, 0.6]);
+Bss = [diag([0.5, 0.4]); diag([0.25, 0.6])];
+Css = [1, 1, 0, 0;
+     0, 0, 1, 1];
+Cz = H*Css;
+zsp = [1, -1]';
+beq = [zeros(4,1); zsp];
+Aeq = [eye(4) - Ass, -Bss;
+    Cz, zeros(2,2)];
+x = Aeq\beq;
+xs = x(1:4);
+us = x(5:end);
 
-xs = s(1:4)
-Cz*xs
+%%
