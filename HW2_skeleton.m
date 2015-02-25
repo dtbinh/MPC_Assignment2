@@ -82,7 +82,7 @@ Le = 3;
 H = [1, 0; 0, 1];
 
 % Matrices for steady state target calculation to be used later
-
+% 3.1 a)
 Ass = diag([0.5, 0.6, 0.5, 0.6]);
 Bss = [diag([0.5, 0.4]); diag([0.25, 0.6])];
 Css = [1, 1, 0, 0;
@@ -96,6 +96,65 @@ x = Aeq\beq;
 xs = x(1:4);
 us = x(5:end);
 
+%% 3.1 b)
+clc
+A = diag([0.5, 0.6, 0.5, 0.6]);
+
+% We cannot control the second signal, put zeros in b matrix
+B = [diag([0.5, 0]); diag([0.25, 0])];
+% B = [0.5 0 0.25 0]';
+C = [1, 1, 0, 0;
+     0, 0, 1, 1];
+Q = eye(2);
+ysp = [1 -1]';
+
+
+Aeq = [eye(4)-A -B];
+beq = zeros(4,1);
+
+% Using fmincon
+x0 = rand(6, 1);
+minFun = @(x) (C*x(1:4) - ysp)' * Q * (C*x(1:4) - ysp);
+[xfmin, fval] = fmincon(minFun, x0, [], [], Aeq, beq, [], []);
+
+% Using quadprog
+Cq = [1 1 0 0 0 0;
+    0 0 1 1 0 0];
+H = [[2 2 0 0;
+      2 2 0 0;
+      0 0 2 2;
+      0 0 2 2], zeros(4, 2); zeros(2, 6)];
+f = [-2 -2 2 2 0 0]';
+options = optimset('Algorithm','interior-point-convex','Display','off');
+xquad = quadprog(H, f, [], [], Aeq, beq, [], [], [], options);
+
+%% 3.1 c)
+A = diag([0.5, 0.6, 0.5, 0.6]); % A-matrix
+B = [diag([0.5, 0.4]); diag([0.25, 0.6])]; % B-matrix
+C = [1, 1, 0, 0;
+     0, 0, 1, 1]; % C-matrix
+H = [1 0]; % Selection matrix
+Cz = H*C; % New C-matrix
+Rs = eye(2);
+usp = [0 0]';
+zsp = 1;
+
+% Equality constrains
+Aeq = [eye(4)-A, -B;
+       Cz, zeros(1,2)];
+beq = [zeros(4, 1); zsp];
+
+% Using fmincon
+x0 = rand(6, 1);
+minFun = @(x) (x(5:6) - usp)' * Rs * (x(5:6) - usp);
+[xfmin, fval] = fmincon(minFun, x0, [], [], Aeq, beq, [], []);
+
+% Using quadprog
+Cs = [0 0 0 0 1 0; 0 0 0 0 0 1];
+H = diag([0 0 0 0 1 1]);
+f = zeros(6, 1);
+options = optimset('Algorithm','interior-point-convex','Display','off');
+xquad = quadprog(H, f, [], [], Aeq, beq, [], [], [], options);
 %%
 %==========================================================================
 % Set up MPC controller
