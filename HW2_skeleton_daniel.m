@@ -64,16 +64,13 @@ end
 
 % Augment the model with constant disturbances
 
-Ae = [A Bd;zeros(nd,n) eye(nd)];
-% Be = [B;zeros(nd + n - size(B, 1), m)];
-Be = [B;zeros(nd, m)];
+Ae = [A, Bd; zeros(nd,n), eye(nd)];
+Be = [B;zeros(nd + n - size(B, 1), m)];
 Ce = [C Cd];
 
-
 % Calculate observer gain 
-SYS = ss(Ae, Be, Ce, zeros(size(Ce, 1), size(Be, 2)), 60)
-[KEST, Le, P, M, Z] = kalman(SYS, eye(2)*100, eye(3));
-
+SYS = ss(Ae, Be, Ce, zeros(size(Ce, 1), size(Be, 2)), 60);
+[KEST, Le, P] = kalman(SYS, eye(2)*0.01, eye(3));
 
 
 
@@ -89,13 +86,13 @@ Cz = H*C;
 As = [eye(3) - A, -B;
       Cz, zeros(2,2)];
 
-dhat = 2;
+dhat = 0.2*ones(nd,1);
 zsp = [0; 0];
--H*Cd*dhat
-bs = [Bd*dhat; -H*Cd*dhat]
-% xus = As\bs
+ 
+bs = [Bd*dhat; -H*Cd*dhat];
+xs = As\bs;
 
-%%
+
 %==========================================================================
 % Set up MPC controller
 %==========================================================================
@@ -106,37 +103,38 @@ M = 3;                    % control horizon
 Q = diag([1 0.001 1]);  % state penalty
 Pf = Q;                 % terminal state penalty
 R = 0.01*eye(m);        % control penalty
-    
-    %=================================
-    % Build Hessian Matrix
-    %=================================
 
-    YOUR MODIFIED CODE FROM ASSIGNMENT 1 GOES HERE
-    
-    %==========================================
-    % Equality Constraints
-    %==========================================
-    
-    YOUR MODIFIED CODE FROM ASSIGNMENT 1 GOES HERE
-    
-    %==========================================
-    % Inequality Constraints
-    %==========================================
-    
-    Ain = [];
-    Bin = [];
-    
-    %==============================================
-    % Choose QP solver 
-    %==============================================
-    
-    solver = 'int';
-    switch solver
-        case 'int'
-            options = optimset('Algorithm','interior-point-convex','Display','off');
-        case 'set'
-            options = optimset('Algorithm','active-set','Display','off');
-    end
+%=================================
+% Build Hessian Matrix
+%=================================
+
+%     YOUR MODIFIED CODE FROM ASSIGNMENT 1 GOES HERE
+
+Hm = [[kron(eye(N-1), Q), zeros((N-1)*n, n); zeros(n, (N-1)*n), Pf], zeros(N*n, M*m); zeros(M*m, N*n), kron(eye(M), R)];
+
+Aeq = [[kron(eye(N), eye(n)) + kron([zeros(1,N); [eye(N-1), zeros(N-1, 1)]], -A)], [kron(eye(M), B); [zeros((N-M)*n, m*(M-1)), kron(ones(N-M, 1), -B)]]];
+AA = [A; zeros((N-1)*n,n)];
+
+%==========================================
+% Equality Constraints
+%==========================================
+
+%     YOUR MODIFIED CODE FROM ASSIGNMENT 1 GOES HERE
+
+%==========================================
+% Inequality Constraints
+%==========================================
+
+Ain = [];
+Bin = [];
+
+%==============================================
+% Choose QP solver 
+%==============================================
+
+solver = 'interior-point-convex'; % 'active-set'
+options = optimset('Algorithm','active-set','Display','off');
+
 
 %******************* End of initialization ********************************    
 
@@ -146,62 +144,92 @@ R = 0.01*eye(m);        % control penalty
     
 % Initialization
     
-YOUR CODE GOES HERE - INITIALIZE ALL VARIABLES NEEDED 
-    
+% YOUR CODE GOES HERE - INITIALIZE ALL VARIABLES NEEDED 
+% tf = 3;
+xhat = [x0; zeros(nd,1)];
+xk = x0;
+yk = C*xk;
+uk = zeros(2,1);
+
+xvec = [];
+uvec = [];
+xhatvec = [];
+dhatvec = [];
+yvec = [];
+
 % Simulate closed-loop system 
     
-    for k = 1:tf
 
-        %======================================
-        % Update the observer state xhat(k|k-1)
-        %======================================
-        
+
+for k = 1:tf
+
+    %======================================
+    % Update the observer state xhat(k|k-1)
+    %======================================
+
+    %         YOUR CODE GOES HERE
+    xhat = Ae*xhat + Be*uk + Le*(yk - Ce*xhat);
+    dhat = xhat((end-nd+1):end);
+
+    %==============================================
+    % Update the process state x(k) and output y(k)
+    %==============================================
+
+    xk = A*xk + B*uk + Bd*ones(nd,1)*d(k);
+    yk = C*xk;
+
+    %=========================================
+    % Calculate steady state targets xs and us
+    %=========================================
+
+
+    bs = [Bd*dhat; -H*Cd*dhat];
+    xus = As\bs;
+    xs = xus(1:n);
+    us = xus((n+1):end);
+
 %         YOUR CODE GOES HERE
-        xhat = Ae*xhat + Be*uk + Le*(yk - Ce*xhat);
-        dhat = xhat(end);
+
+    %============================================
+    % Solve the QP (for the deviation variables!)
+    %============================================
+
+%     UPDATE RHS OF EQUALITY CONSTRAINT HERE
+
+    beq = AA*xhat(1:n);
         
-        %==============================================
-        % Update the process state x(k) and output y(k)
-        %==============================================
+    z = quadprog(Hm,[],Ain,Bin,Aeq,beq,[],[],[],options);
+    
+    du = z(N*n+1:N*n+m);
+    
+    uk = du + us;
         
-        xk = A*xk + B*uk + Bp*d(k);
-        yk = C*xk;
-        
-        %=========================================
-        % Calculate steady state targets xs and us
-        %=========================================
-        
-        
-        bs = [Bd*dhat; -H*Cd*dhat];
-        xs = As\bs;
-        
-%         YOUR CODE GOES HERE
-        
-        %============================================
-        % Solve the QP (for the deviation variables!)
-        %============================================
-        
-        UPDATE RHS OF EQUALITY CONSTRAINT HERE
-        
-        % NOTE THAT HM IS USED FOR THE HESSIAN, NOT TO BE CONFUSED 
-        %   WITH H THAT IS USED FOR SELECTING CONTROLLED VARIABLES
-        z = quadprog(HM,[],Ain,Bin,Aeq,beq,[],[],[],options);
-        
-        CALCULATE THE NEW CONTROL SIGNAL HERE
-        % NOTE THAT YOU NEED TO GO FROM DEVIATION VARIABLES TO 'REAL' ONES!
-        
-        %===============================        
-        % Store current variables in log 
-        %===============================
-        
-        YOUR CODE GOES HERE
-        
-   end % simulation loop
- 
+%     CALCULATE THE NEW CONTROL SIGNAL HERE
+    % NOTE THAT YOU NEED TO GO FROM DEVIATION VARIABLES TO 'REAL' ONES!
+
+    %===============================        
+    % Store current variables in log 
+    %===============================
+    xvec = [xvec, xk];
+    xhatvec = [xhatvec, xhat];
+    uvec = [uvec, uk];
+    dhatvec = [dhatvec, dhat];
+    yvec = [yvec, yk];
+%     YOUR CODE GOES HERE
+
+end % simulation loop
+
+figure(1)
+hold on
+plot(xvec(1,:))
+plot(xhatvec(1,:), 'r--');
+
+% figure(2)
+
 %==========================================================================
 % Plot results
 %==========================================================================
         
-YOUR CODE GOES HERE
+% YOUR CODE GOES HERE
 
 
