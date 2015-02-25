@@ -65,12 +65,14 @@ end
 % Augment the model with constant disturbances
 
 Ae = [A Bd;zeros(nd,n) eye(nd)];
-Be = [B;zeros(nd + n - size(B, 1), m)];
+% Be = [B;zeros(nd + n - size(B, 1), m)];
+Be = [B;zeros(nd, m)];
 Ce = [C Cd];
+
 
 % Calculate observer gain 
 SYS = ss(Ae, Be, Ce, zeros(size(Ce, 1), size(Be, 2)), 60)
-[KEST, Le, P, M, Z] = kalman(SYS, eye(2)*0.01, eye(3));
+[KEST, Le, P, M, Z] = kalman(SYS, eye(2)*100, eye(3));
 
 
 
@@ -89,9 +91,9 @@ As = [eye(3) - A, -B;
 
 dhat = 2;
 zsp = [0; 0];
- -H*Cd*dhat
+-H*Cd*dhat
 bs = [Bd*dhat; -H*Cd*dhat]
-% xs = As\bs
+% xus = As\bs
 
 %%
 %==========================================================================
