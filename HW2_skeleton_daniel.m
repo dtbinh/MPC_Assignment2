@@ -46,7 +46,7 @@ x0 = [0.01;1;0.1]; % initial condition of system's state
 
 % Three cases to be investigated
 
-example = 'a';
+example = 'b';
 switch example
     case 'a'
         nd = 2;
@@ -146,7 +146,8 @@ options = optimset('Algorithm', solver, 'Display', 'off');
     
 % YOUR CODE GOES HERE - INITIALIZE ALL VARIABLES NEEDED 
 
-xhat = [x0; zeros(nd,1)];
+% xhat = [x0; zeros(nd,1)];
+xhat = [zeros(nd+n,1)];
 xk = x0;
 yk = C*xk;
 uk = zeros(m,1);
@@ -156,6 +157,7 @@ uvec = [];
 xhatvec = [];
 dhatvec = [];
 yvec = [];
+xusvec = [];
 
 % Simulate closed-loop system 
     
@@ -169,7 +171,7 @@ for k = 1:tf
 
     %         YOUR CODE GOES HERE
     xhat = Ae*xhat + Be*uk + Le*(yk - Ce*xhat);
-    dhat = xhat((end-nd+1):end);
+    dhat = xhat(n+1:end);
 
     %==============================================
     % Update the process state x(k) and output y(k)
@@ -216,14 +218,22 @@ for k = 1:tf
     uvec = [uvec, uk];
     dhatvec = [dhatvec, dhat];
     yvec = [yvec, yk];
+    xusvec = [xusvec, xus];
 %     YOUR CODE GOES HERE
 
 end % simulation loop
 
 figure(1)
 hold on
-plot(xvec(1,:))
-plot(xhatvec(1,:), 'r--');
+% plot(xusvec(5, :))
+% plot(xvec(3,:))
+% plot(xhatvec(3,:), 'r--');
+% plot(dhatvec(1,:))
+plot(yvec(3,:))
+% plot(d)
+
+% axis([0, 30, -1, 10])
+
 
 % figure(2)
 
